@@ -130,6 +130,8 @@ nav:
           - tutorials/open-systems.md
           - tutorials/batching-simulations.md
           - tutorials/computing-gradients.md
+      - Example applications:
+          - applications/experimental-fits.md
   - Python API:
       - python_api/index.md
       - Quantum solvers:

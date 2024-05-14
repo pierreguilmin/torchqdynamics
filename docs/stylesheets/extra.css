@@ -324,8 +324,12 @@ p {
 }
 
 /* Spacing before/after latex formula */
-.md-typeset .arithmatex {
+.md-typeset div.arithmatex {
   margin: -0.5em 0 -1em 0;
+}
+
+.md-typeset div.arithmatex > * {
+    padding: 0;
 }
 
 /* Header sizes */
