@@ -86,21 +86,22 @@ def to_qutip(x: ArrayLike, dims: tuple[int, ...] | None = None) -> Qobj | list[Q
         return Qobj(x, dims=dims)
 
 
-def set_device(device: Literal['cpu', 'gpu', 'tpu']):
+def set_device(device: Literal['cpu', 'gpu', 'tpu'], index: int = 0):
     """Configure the default device.
 
     Note-: Equivalent JAX syntax
         This function is equivalent to
         ```
-        jax.config.update('jax_default_device', jax.devices(device)[0])
+        jax.config.update('jax_default_device', jax.devices(device)[index])
         ```
 
     See [JAX documentation on devices](https://jax.readthedocs.io/en/latest/faq.html#faq-data-placement).
 
     Args:
         device _(string 'cpu', 'gpu', or 'tpu')_: Default device.
+        index: Index of the device, useful for clusters with multiple GPUs.
     """
-    jax.config.update('jax_default_device', jax.devices(device)[0])
+    jax.config.update('jax_default_device', jax.devices(device)[index])
 
 
 def set_precision(precision: Literal['simple', 'double']):
