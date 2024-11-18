@@ -217,6 +217,7 @@ nav:
               - coherent_dm: python_api/utils/states/coherent_dm.md
               - ground: python_api/utils/states/ground.md
               - excited: python_api/utils/states/excited.md
+              - thermal_dm: python_api/utils/states/thermal_dm.md
           - Quantum utilities:
               - dag: python_api/utils/quantum_utils/dag.md
               - powm: python_api/utils/quantum_utils/powm.md
