@@ -21,6 +21,7 @@ class MEInterface(eqx.Module):
 
     H: TimeArray
     Ls: list[TimeArray]
+    Liouv: QArray
 
     def L(self, t: Scalar) -> list[QArray]:
         return [_L(t) for _L in self.Ls]  # (nLs, n, n)

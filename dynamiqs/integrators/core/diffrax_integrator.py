@@ -15,7 +15,7 @@ from ...utils.general import dag
 from .abstract_integrator import BaseIntegrator
 from .save_mixin import SaveMixin
 from .interfaces import SEInterface, MEInterface
-
+from ...utils.vectorization import operator_to_vector, slindbladian
 
 class DiffraxIntegrator(BaseIntegrator, SaveMixin):
     """Integrator using the Diffrax library."""
@@ -67,13 +67,14 @@ class DiffraxIntegrator(BaseIntegrator, SaveMixin):
                 adjoint = dx.DirectAdjoint()
 
             # === solve differential equation with diffrax
+            y0 = operator_to_vector(self.y0)
             solution = dx.diffeqsolve(
                 self.terms,
                 self.diffrax_solver,
                 t0=self.t0,
                 t1=self.t1,
                 dt0=self.dt0,
-                y0=self.y0,
+                y0=y0,
                 saveat=saveat,
                 stepsize_controller=self.stepsize_controller,
                 adjoint=adjoint,
@@ -219,9 +220,6 @@ class MEDiffraxIntegrator(DiffraxIntegrator, MEInterface):
         # induced on the dynamics.
 
         def vector_field(t, y, _):  # noqa: ANN001, ANN202
-            L, H = self.L(t), self.H(t)
-            Hnh = tree_sum([-1j * H] + [-0.5 * _L.dag() @ _L for _L in L])
-            tmp = tree_sum([Hnh @ y] + [0.5 * _L @ y @ _L.dag() for _L in L])
-            return tmp + tmp.dag()
+            return self.Liouv @ y
 
         return dx.ODETerm(vector_field)

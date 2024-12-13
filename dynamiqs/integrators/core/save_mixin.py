@@ -5,6 +5,7 @@ from jaxtyping import PyTree
 
 from ...result import PropagatorSaved, Saved, SolveSaved
 from ...utils.general import expect
+from ...utils.vectorization import vector_to_operator
 from .interfaces import OptionsInterface, SolveInterface
 
 
@@ -37,6 +38,7 @@ class SolveSaveMixin(SaveMixin, SolveInterface):
     """Mixin to assist integrators computing time evolution with data saving."""
 
     def save(self, y: PyTree) -> Saved:
+        y = vector_to_operator(y)
         saved = super().save(y)
         Esave = expect(self.Es, y) if self.Es is not None else None
         return SolveSaved(saved.ysave, saved.extra, Esave)

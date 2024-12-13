@@ -114,8 +114,7 @@ def spre(x: QArrayLike) -> QArray:
     """
     x = asqarray(x)
     check_shape(x, 'x', '(..., n, n)')
-    n = x.shape[-1]
-    return eye(n) & x
+    return eye(*x.dims).superand(x)
 
 
 def spost(x: QArrayLike) -> QArray:
@@ -139,8 +138,7 @@ def spost(x: QArrayLike) -> QArray:
     """
     x = asqarray(x)
     check_shape(x, 'x', '(..., n, n)')
-    n = x.shape[-1]
-    return x.mT & eye(n)
+    return x.mT.superand(eye(*x.dims))
 
 
 def sprepost(x: QArrayLike, y: QArrayLike) -> QArray:
@@ -167,7 +165,7 @@ def sprepost(x: QArrayLike, y: QArrayLike) -> QArray:
     y = asqarray(y)
     check_shape(x, 'x', '(..., n, n)')
     check_shape(y, 'y', '(..., n, n)')
-    return y.mT & x
+    return y.mT.superand(x)
 
 
 def sdissipator(L: QArrayLike) -> QArray:

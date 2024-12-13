@@ -26,6 +26,7 @@ from ...solver import (
     Tsit5,
 )
 from ...time_array import TimeArray
+from ...utils.vectorization import slindbladian
 from .._utils import (
     _astimearray,
     cartesian_vmap,
@@ -215,6 +216,7 @@ def _mesolve(
         H=H,
         Ls=Ls,
         Es=exp_ops,
+        Liouv=slindbladian(H.array, [L.array for L in Ls])
     )
 
     # === run integrator

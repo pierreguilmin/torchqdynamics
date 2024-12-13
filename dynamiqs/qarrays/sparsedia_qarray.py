@@ -159,7 +159,7 @@ class SparseDIAQArray(QArray):
             return SparseDIAQArray(self.dims, self.offsets, self.diags.squeeze(axis))
 
     def _eigh(self) -> tuple[Array, Array]:
-        raise NotImplementedError
+        return self.asdense()._eigh()  # noqa: SLF001
 
     def _eigvals(self) -> Array:
         raise NotImplementedError
@@ -278,6 +278,17 @@ class SparseDIAQArray(QArray):
             other = _to_jax(other)
             data = matmul_array_sparsedia(other, self.offsets, self.diags)
             return DenseQArray(self.dims, data)
+
+        return NotImplemented
+
+    def superand(self, other: QArray) -> QArray:
+        if isinstance(other, SparseDIAQArray):
+            offsets, diags = and_sparsedia_sparsedia(
+                self.offsets, self.diags, other.offsets, other.diags
+            )
+            return SparseDIAQArray(self.dims, offsets, diags)
+        elif isinstance(other, DenseQArray):
+            return self.asdense() & other
 
         return NotImplemented
 
