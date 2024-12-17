@@ -80,7 +80,6 @@ class TestConstantTimeArray:
         assert_equal(x(0.0), [[1, 2], [3, 4]])
 
 
-@pytest.mark.skip(reason='TODO (fix before merge)')
 class TestCallableTimeArray:
     @pytest.fixture(autouse=True)
     def _setup(self):
