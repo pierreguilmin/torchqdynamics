@@ -50,6 +50,7 @@ The **Dynamiqs** Python API features two main types of functions: solvers of dif
         - Kvaerno3
         - Kvaerno5
         - Euler
+        - EulerMaruyama
         - Rouchon1
         - Rouchon2
         - Expm
