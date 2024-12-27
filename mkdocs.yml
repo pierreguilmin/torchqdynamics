@@ -155,6 +155,7 @@ nav:
           - sepropagator: python_api/integrators/sepropagator.md
           - mepropagator: python_api/integrators/mepropagator.md
           - floquet: python_api/integrators/floquet.md
+          - jsmesolve: python_api/integrators/jsmesolve.md
           - dsmesolve: python_api/integrators/dsmesolve.md
       - Core:
           - Quantum arrays: python_api/qarrays/qarray/QArray.md
@@ -184,6 +185,7 @@ nav:
               - SEPropagatorResult: python_api/result/SEPropagatorResult.md
               - MEPropagatorResult: python_api/result/MEPropagatorResult.md
               - FloquetResult: python_api/result/FloquetResult.md
+              - JSMESolveResult: python_api/result/JSMESolveResult.md
               - DSMESolveResult: python_api/result/DSMESolveResult.md
       - Utilities:
           - Operators:
