@@ -152,10 +152,10 @@ nav:
       - Quantum solvers:
           - sesolve: python_api/integrators/sesolve.md
           - mesolve: python_api/integrators/mesolve.md
-          - smesolve: python_api/integrators/smesolve.md
           - sepropagator: python_api/integrators/sepropagator.md
           - mepropagator: python_api/integrators/mepropagator.md
           - floquet: python_api/integrators/floquet.md
+          - dsmesolve: python_api/integrators/dsmesolve.md
       - Core:
           - Quantum arrays: python_api/qarrays/qarray/QArray.md
           - Time-dependent qarrays:
@@ -184,6 +184,7 @@ nav:
               - SEPropagatorResult: python_api/result/SEPropagatorResult.md
               - MEPropagatorResult: python_api/result/MEPropagatorResult.md
               - FloquetResult: python_api/result/FloquetResult.md
+              - DSMESolveResult: python_api/result/DSMESolveResult.md
       - Utilities:
           - Operators:
               - eye: python_api/utils/operators/eye.md
