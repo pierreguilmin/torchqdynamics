@@ -13,6 +13,8 @@ The **Dynamiqs** Python API features two main types of functions: solvers of dif
         - sepropagator
         - mepropagator
         - floquet
+        - jssesolve
+        - dssesolve
         - jsmesolve
         - dsmesolve
 
@@ -83,6 +85,8 @@ The **Dynamiqs** Python API features two main types of functions: solvers of dif
         - SEPropagatorResult
         - MEPropagatorResult
         - FloquetResult
+        - JSSESolveResult
+        - DSSESolveResult
         - JSMESolveResult
         - DSMESolveResult
 

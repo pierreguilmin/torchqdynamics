@@ -155,6 +155,8 @@ nav:
           - sepropagator: python_api/integrators/sepropagator.md
           - mepropagator: python_api/integrators/mepropagator.md
           - floquet: python_api/integrators/floquet.md
+          - jssesolve: python_api/integrators/jssesolve.md
+          - dssesolve: python_api/integrators/dssesolve.md
           - jsmesolve: python_api/integrators/jsmesolve.md
           - dsmesolve: python_api/integrators/dsmesolve.md
       - Core:
@@ -186,6 +188,8 @@ nav:
               - SEPropagatorResult: python_api/result/SEPropagatorResult.md
               - MEPropagatorResult: python_api/result/MEPropagatorResult.md
               - FloquetResult: python_api/result/FloquetResult.md
+              - JSSESolveResult: python_api/result/JSSESolveResult.md
+              - DSSESolveResult: python_api/result/DSSESolveResult.md
               - JSMESolveResult: python_api/result/JSMESolveResult.md
               - DSMESolveResult: python_api/result/DSMESolveResult.md
       - Utilities:

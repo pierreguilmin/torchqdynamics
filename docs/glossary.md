@@ -10,3 +10,4 @@
 
 *[PWC]: piecewise constant
 *[SME]: stochastic master equation
+*[SSE]: stochastic Schrödinger equation

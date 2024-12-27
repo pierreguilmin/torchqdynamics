@@ -13,6 +13,8 @@ from .solver import Solver
 __all__ = [
     'FloquetResult',
     'MEPropagatorResult',
+    'JSSESolveResult',
+    'DSSESolveResult',
     'JSMESolveResult',
     'DSMESolveResult',
     'MESolveResult',
@@ -367,6 +369,125 @@ class MEPropagatorResult(PropagatorResult):
             - `jump_ops = [L0, L1]` has shape _[(3, n, n), (2, 1, n, n)]_,
 
             then `propagators` has shape _(2, 3, ntsave, n, n)_.
+
+        See the
+        [Batching simulations](../../documentation/basics/batching-simulations.md)
+        tutorial for more details.
+    """
+
+
+class JSSESolveResult(SolveResult):
+    r"""Result of the jump SSE integration.
+
+    For the shape indications we define `ntrajs` as the number of trajectories
+    (`ntrajs = len(keys)`).
+
+    Attributes:
+        states _(qarray of shape (..., ntrajs, nsave, n, 1))_: Saved states with
+            `nsave = ntsave`, or `nsave = 1` if `options.save_states` is set to `False`.
+        final_state _(qarray of shape (..., ntrajs, n, 1))_: Saved final state.
+        clicktimes _(array of shape (..., ntrajs, len(jump_ops), nmaxclick))_: Times at
+            which the detectors clicked. Variable-length array padded with `None` up to
+            `nmaxclick`.
+        expects _(array of shape (..., ntrajs, len(exp_ops), ntsave) or None)_: Saved
+            expectation values, if specified by `exp_ops`.
+        extra _(PyTree or None)_: Extra data saved with `save_extra()` if
+            specified in `options` (see [`dq.Options`][dynamiqs.Options]).
+        infos _(PyTree or None)_: Solver-dependent information on the resolution.
+        tsave _(array of shape (ntsave,))_: Times for which results were saved.
+        keys _(PRNG key array of shape (ntrajs,))_: PRNG keys used to sample the Wiener
+            processes.
+        solver _(Solver)_: Solver used.
+        gradient _(Gradient)_: Gradient used.
+        options _(Options)_: Options used.
+
+    Note-: Result of running multiple simulations concurrently
+        The resulting states, click times and expectation values are batched according
+        to the leading dimensions of the Hamiltonian `H` and initial state `psi0`. The
+        behaviour depends on the value of the `cartesian_batching` option
+
+        === "If `cartesian_batching = True` (default value)"
+            The results leading dimensions are
+            ```
+            ... = ...H, ...psi0
+            ```
+            For example if:
+
+            - `H` has shape _(2, 3, n, n)_,
+            - `psi0` has shape _(4, n, 1)_,
+
+            then `states` has shape _(2, 3, 4, ntrajs, ntsave, n, 1)_.
+
+        === "If `cartesian_batching = False`"
+            The results leading dimensions are
+            ```
+            ... = ...H = ...psi0  # (once broadcasted)
+            ```
+            For example if:
+
+            - `H` has shape _(2, 3, n, n)_,
+            - `psi0` has shape _(3, n, 1)_,
+
+            then `states` has shape _(2, 3, ntrajs, ntsave, n, 1)_.
+
+        See the
+        [Batching simulations](../../documentation/basics/batching-simulations.md)
+        tutorial for more details.
+    """
+
+
+class DSSESolveResult(SolveResult):
+    r"""Result of the diffusive SSE integration.
+
+    For the shape indications we define `ntrajs` as the number of trajectories
+    (`ntrajs = len(keys)`).
+
+    Attributes:
+        states _(qarray of shape (..., ntrajs, nsave, n, 1))_: Saved states with
+            `nsave = ntsave`, or `nsave = 1` if `options.save_states` is set to `False`.
+        final_state _(qarray of shape (..., ntrajs, n, 1))_: Saved final state.
+        measurements _(array of shape (..., ntrajs, len(jump_ops), nsave-1))_: Saved
+            measurements.
+        expects _(array of shape (..., ntrajs, len(exp_ops), ntsave) or None)_: Saved
+            expectation values, if specified by `exp_ops`.
+        extra _(PyTree or None)_: Extra data saved with `save_extra()` if
+            specified in `options` (see [`dq.Options`][dynamiqs.Options]).
+        infos _(PyTree or None)_: Solver-dependent information on the resolution.
+        tsave _(array of shape (ntsave,))_: Times for which results were saved.
+        keys _(PRNG key array of shape (ntrajs,))_: PRNG keys used to sample the Wiener
+            processes.
+        solver _(Solver)_: Solver used.
+        gradient _(Gradient)_: Gradient used.
+        options _(Options)_: Options used.
+
+    Note-: Result of running multiple simulations concurrently
+        The resulting states, measurements and expectation values are batched according
+        to the leading dimensions of the Hamiltonian `H` and initial state `psi0`. The
+        behaviour depends on the value of the `cartesian_batching` option
+
+        === "If `cartesian_batching = True` (default value)"
+            The results leading dimensions are
+            ```
+            ... = ...H, ...psi0
+            ```
+            For example if:
+
+            - `H` has shape _(2, 3, n, n)_,
+            - `psi0` has shape _(4, n, 1)_,
+
+            then `states` has shape _(2, 3, 4, ntrajs, ntsave, n, 1)_.
+
+        === "If `cartesian_batching = False`"
+            The results leading dimensions are
+            ```
+            ... = ...H = ...psi0  # (once broadcasted)
+            ```
+            For example if:
+
+            - `H` has shape _(2, 3, n, n)_,
+            - `psi0` has shape _(3, n, 1)_,
+
+            then `states` has shape _(2, 3, ntrajs, ntsave, n, 1)_.
 
         See the
         [Batching simulations](../../documentation/basics/batching-simulations.md)
