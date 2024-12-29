@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import functools as ft
 from abc import abstractmethod
-from typing import get_args
 
 import equinox as eqx
 import jax
@@ -261,10 +260,7 @@ class TimeQArray(eqx.Module):
     # Subclasses should implement:
     # - the properties: dtype, shape, dims, ndiags, vectorized, layout, mT, in_axes,
     #                   discontinuity_ts
-    # - the methods: reshape, broadcast_to, conj, __call__, __mul__, __add__
-
-    # Note that a subclass implementation of `__add__` only need to support addition
-    # with `QArray`, `ConstantTimeQArray` and the subclass type itself.
+    # - the methods: reshape, broadcast_to, conj, __call__, __mul__
 
     def _replace(self, **kwargs) -> TimeQArray:
         return type(self)(**kwargs)
@@ -403,9 +399,14 @@ class TimeQArray(eqx.Module):
     def __rmul__(self, y: QArrayLike) -> TimeQArray:
         return self * y
 
-    @abstractmethod
     def __add__(self, y: QArrayLike | TimeQArray) -> TimeQArray:
-        pass
+        if isqarraylike(y):
+            y = ConstantTimeQArray(asqarray(y))
+
+        if isinstance(y, TimeQArray):
+            return SummedTimeQArray([self, y])
+        else:
+            return NotImplemented
 
     def __radd__(self, y: QArrayLike | TimeQArray) -> TimeQArray:
         return self + y
@@ -493,14 +494,13 @@ class ConstantTimeQArray(TimeQArray):
         return self._replace(qarray=qarray)
 
     def __add__(self, y: QArrayLike | TimeQArray) -> TimeQArray:
+        # handle addition with a constant object as a special case
         if isqarraylike(y):
-            return ConstantTimeQArray(asqarray(y) + self.qarray)
-        elif isinstance(y, ConstantTimeQArray):
+            y = ConstantTimeQArray(asqarray(y))
+        if isinstance(y, ConstantTimeQArray):
             return ConstantTimeQArray(self.qarray + y.qarray)
-        elif isinstance(y, TimeQArray):
-            return SummedTimeQArray([self, y])
-        else:
-            return NotImplemented
+
+        return super().__add__(y)
 
 
 class PWCTimeQArray(TimeQArray):
@@ -590,15 +590,6 @@ class PWCTimeQArray(TimeQArray):
         qarray = self.qarray * y
         return self._replace(qarray=qarray)
 
-    def __add__(self, y: QArrayLike | TimeQArray) -> TimeQArray:
-        if isqarraylike(y):
-            y = ConstantTimeQArray(asqarray(y))
-            return SummedTimeQArray([self, y])
-        elif isinstance(y, TimeQArray):
-            return SummedTimeQArray([self, y])
-        else:
-            return NotImplemented
-
 
 class ModulatedTimeQArray(TimeQArray):
     f: BatchedCallable  # (...)
@@ -674,15 +665,6 @@ class ModulatedTimeQArray(TimeQArray):
         qarray = self.qarray * y
         return self._replace(qarray=qarray)
 
-    def __add__(self, y: QArrayLike | TimeQArray) -> TimeQArray:
-        if isqarraylike(y):
-            y = ConstantTimeQArray(asqarray(y))
-            return SummedTimeQArray([self, y])
-        elif isinstance(y, TimeQArray):
-            return SummedTimeQArray([self, y])
-        else:
-            return NotImplemented
-
 
 class CallableTimeQArray(TimeQArray):
     f: BatchedCallable  # (..., n, n)
@@ -748,17 +730,6 @@ class CallableTimeQArray(TimeQArray):
     def __mul__(self, y: QArrayLike) -> TimeQArray:
         f = self.f * y
         return self._replace(f=f)
-
-    def __add__(self, y: QArrayLike | TimeQArray) -> TimeQArray:
-        if isinstance(y, get_args(ScalarLike)):
-            return ConstantTimeQArray(self.f + y)
-        elif isqarraylike(y):
-            y = ConstantTimeQArray(asqarray(y))
-            return SummedTimeQArray([self, y])
-        elif isinstance(y, TimeQArray):
-            return SummedTimeQArray([self, y])
-        else:
-            return NotImplemented
 
 
 class SummedTimeQArray(TimeQArray):
@@ -853,11 +824,7 @@ class SummedTimeQArray(TimeQArray):
     def __add__(self, y: QArrayLike | TimeQArray) -> TimeQArray:
         if isqarraylike(y):
             y = ConstantTimeQArray(asqarray(y))
-            return SummedTimeQArray([*self.timeqarrays, y])
-        elif isinstance(y, TimeQArray):
-            return SummedTimeQArray([*self.timeqarrays, y])
-        else:
-            return NotImplemented
+        return SummedTimeQArray([*self.timeqarrays, y])
 
 
 class BatchedCallable(eqx.Module):
