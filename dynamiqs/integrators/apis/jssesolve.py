@@ -90,7 +90,7 @@ def jssesolve(
         psi0 _(qarray-like of shape (...psi0, n, 1))_: Initial state.
         tsave _(array-like of shape (ntsave,))_: Times at which the states and
             expectation values are saved. The equation is solved from `tsave[0]` to
-            `tsave[-1]`, or from `t0` to `tsave[-1]` if `t0` is specified in `options`.
+            `tsave[-1]`.
         keys _(list of PRNG keys)_: PRNG keys used to sample the point processes.
             The number of elements defines the number of sampled stochastic
             trajectories.
