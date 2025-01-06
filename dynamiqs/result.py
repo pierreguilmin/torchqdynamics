@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from abc import abstractmethod
+
 import equinox as eqx
 from jax import Array
 from jaxtyping import PyTree
@@ -391,6 +393,10 @@ class JSSESolveResult(SolveResult):
             `nmaxclick`.
         expects _(array of shape (..., ntrajs, len(exp_ops), ntsave) or None)_: Saved
             expectation values, if specified by `exp_ops`.
+        no_jump_state _(..., nsave, n, 1)_: Saved state for the no jump trajectory, only
+            if `options.smart_sampling = True`.
+        no_jump_proba _(..., nsave)_: Probability of the no jump trajectory, only
+            if `options.smart_sampling = True`.
         extra _(PyTree or None)_: Extra data saved with `save_extra()` if
             specified in `options` (see [`dq.Options`][dynamiqs.Options]).
         infos _(PyTree or None)_: Solver-dependent information on the resolution.
@@ -434,6 +440,14 @@ class JSSESolveResult(SolveResult):
         [Batching simulations](../../documentation/basics/batching-simulations.md)
         tutorial for more details.
     """
+
+    @abstractmethod
+    def no_jump_state(self) -> Array | None:
+        pass
+
+    @abstractmethod
+    def no_jump_proba(self) -> Array | None:
+        pass
 
 
 class DSSESolveResult(SolveResult):
