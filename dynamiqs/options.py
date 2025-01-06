@@ -156,6 +156,7 @@ class Options(eqx.Module):
             save_states: bool = True,
             cartesian_batching: bool = True,
             save_extra: callable[[Array], PyTree] | None = None,
+            nmaxclick: int = 10_000,
             smart_sampling: bool = False,
         )
         ```
@@ -172,6 +173,8 @@ class Options(eqx.Module):
             a PyTree. This can be used to save additional arbitrary data during the
             integration. The additional data is accessible in the `extra` attribute of
             the result object returned by the solvers.
+        - **nmaxclick** - Maximum buffer size for `result.clicktimes`, should be set
+            higher than the expected maximum number of jump event.
         - **smart_sampling** - If `True`, the no jump trajectory is simulated only once,
             and only trajectories with one or more jumps are sampled in `result.states`.
             The no jump state is accessible in `result.no_jump_state` with its
@@ -206,6 +209,7 @@ class Options(eqx.Module):
             save_states: bool = True,
             cartesian_batching: bool = True,
             save_extra: callable[[Array], PyTree] | None = None,
+            nmaxclick: int = 10_000,
         )
         ```
 
@@ -221,6 +225,8 @@ class Options(eqx.Module):
             a PyTree. This can be used to save additional arbitrary data during the
             integration. The additional data is accessible in the `extra` attribute of
             the result object returned by the solvers.
+        - **nmaxclick** - Maximum buffer size for `result.clicktimes`, should be set
+            higher than the expected maximum number of jump event.
 
     === "`dq.dsmesolve()`"
         ```python
@@ -251,6 +257,7 @@ class Options(eqx.Module):
     progress_meter: AbstractProgressMeter | None = TqdmProgressMeter()
     t0: ScalarLike | None = None
     save_extra: callable[[QArray], PyTree] | None = None
+    nmaxclick: int = 10_000
     smart_sampling: bool = False
 
     def __init__(
@@ -261,6 +268,7 @@ class Options(eqx.Module):
         progress_meter: AbstractProgressMeter | None = TqdmProgressMeter(),  # noqa: B008
         t0: ScalarLike | None = None,
         save_extra: callable[[QArray], PyTree] | None = None,
+        nmaxclick: int = 10_000,
         smart_sampling: bool = False,
     ):
         if progress_meter is None:
@@ -271,6 +279,7 @@ class Options(eqx.Module):
         self.cartesian_batching = cartesian_batching
         self.progress_meter = progress_meter
         self.t0 = t0
+        self.nmaxclick = nmaxclick
         self.smart_sampling = smart_sampling
 
         # make `save_extra` a valid Pytree with `Partial`
