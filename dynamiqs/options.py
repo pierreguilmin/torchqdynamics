@@ -149,6 +149,100 @@ class Options(eqx.Module):
             If gradients are computed, the progress meter only displays during the
             forward pass.
         - **t0** – Initial time. If `None`, defaults to the first time in `tsave`.
+
+    === "`dq.jssesolve()`"
+        ```python
+        Options(
+            save_states: bool = True,
+            cartesian_batching: bool = True,
+            save_extra: callable[[Array], PyTree] | None = None,
+            smart_sampling: bool = False,
+        )
+        ```
+
+        **Parameters**
+
+        - **save_states** – If `True`, the state is saved at every time in `tsave`,
+            otherwise only the final state is returned.
+        - **cartesian_batching** – If `True`, batched arguments are treated as separated
+            batch dimensions, otherwise the batching is performed over a single
+            shared batched dimension.
+        - **save_extra** _(function, optional)_ – A function with signature
+            `f(QArray) -> PyTree` that takes a state or propagator as input and returns
+            a PyTree. This can be used to save additional arbitrary data during the
+            integration. The additional data is accessible in the `extra` attribute of
+            the result object returned by the solvers.
+        - **smart_sampling** - If `True`, the no jump trajectory is simulated only once,
+            and only trajectories with one or more jumps are sampled in `result.states`.
+            The no jump state is accessible in `result.no_jump_state` with its
+            associated probability `result.no_jump_proba`.
+
+    === "`dq.dssesolve()`"
+        ```python
+        Options(
+            save_states: bool = True,
+            cartesian_batching: bool = True,
+            save_extra: callable[[Array], PyTree] | None = None,
+        )
+        ```
+
+        **Parameters**
+
+        - **save_states** – If `True`, the state is saved at every time in `tsave`,
+            otherwise only the final state is returned.
+        - **cartesian_batching** – If `True`, batched arguments are treated as separated
+            batch dimensions, otherwise the batching is performed over a single
+            shared batched dimension.
+        - **save_extra** _(function, optional)_ – A function with signature
+            `f(QArray) -> PyTree` that takes a state or propagator as input and returns
+            a PyTree. This can be used to save additional arbitrary data during the
+            integration. The additional data is accessible in the `extra` attribute of
+            the result object returned by the solvers.
+
+
+    === "`dq.jsmesolve()`"
+        ```python
+        Options(
+            save_states: bool = True,
+            cartesian_batching: bool = True,
+            save_extra: callable[[Array], PyTree] | None = None,
+        )
+        ```
+
+        **Parameters**
+
+        - **save_states** – If `True`, the state is saved at every time in `tsave`,
+            otherwise only the final state is returned.
+        - **cartesian_batching** – If `True`, batched arguments are treated as separated
+            batch dimensions, otherwise the batching is performed over a single
+            shared batched dimension.
+        - **save_extra** _(function, optional)_ – A function with signature
+            `f(QArray) -> PyTree` that takes a state or propagator as input and returns
+            a PyTree. This can be used to save additional arbitrary data during the
+            integration. The additional data is accessible in the `extra` attribute of
+            the result object returned by the solvers.
+
+    === "`dq.dsmesolve()`"
+        ```python
+        Options(
+            save_states: bool = True,
+            cartesian_batching: bool = True,
+            save_extra: callable[[Array], PyTree] | None = None,
+        )
+        ```
+
+        **Parameters**
+
+        - **save_states** – If `True`, the state is saved at every time in `tsave`,
+            otherwise only the final state is returned.
+        - **cartesian_batching** – If `True`, batched arguments are treated as separated
+            batch dimensions, otherwise the batching is performed over a single
+            shared batched dimension.
+        - **save_extra** _(function, optional)_ – A function with signature
+            `f(QArray) -> PyTree` that takes a state or propagator as input and returns
+            a PyTree. This can be used to save additional arbitrary data during the
+            integration. The additional data is accessible in the `extra` attribute of
+            the result object returned by the solvers.
     """  # noqa: RUF002
 
     save_states: bool = True
@@ -157,6 +251,7 @@ class Options(eqx.Module):
     progress_meter: AbstractProgressMeter | None = TqdmProgressMeter()
     t0: ScalarLike | None = None
     save_extra: callable[[QArray], PyTree] | None = None
+    smart_sampling: bool = False
 
     def __init__(
         self,
@@ -166,6 +261,7 @@ class Options(eqx.Module):
         progress_meter: AbstractProgressMeter | None = TqdmProgressMeter(),  # noqa: B008
         t0: ScalarLike | None = None,
         save_extra: callable[[QArray], PyTree] | None = None,
+        smart_sampling: bool = False,
     ):
         if progress_meter is None:
             progress_meter = NoProgressMeter()
@@ -175,6 +271,7 @@ class Options(eqx.Module):
         self.cartesian_batching = cartesian_batching
         self.progress_meter = progress_meter
         self.t0 = t0
+        self.smart_sampling = smart_sampling
 
         # make `save_extra` a valid Pytree with `Partial`
         self.save_extra = jtu.Partial(save_extra) if save_extra is not None else None
@@ -202,6 +299,15 @@ def check_options(options: Options, solver_name: str):
         'sepropagator': ('save_propagators', 'progress_meter', 't0', 'save_extra'),
         'mepropagator': ('save_propagators', 'cartesian_batching', 't0', 'save_extra'),
         'floquet': ('progress_meter', 't0'),
+        'jssesolve': (
+            'save_states',
+            'cartesian_batching',
+            'save_extra',
+            'smart_sampling',
+        ),
+        'dssesolve': ('save_states', 'cartesian_batching', 'save_extra'),
+        'jsmesolve': ('save_states', 'cartesian_batching', 'save_extra'),
+        'dsmesolve': ('save_states', 'cartesian_batching', 'save_extra'),
     }
     valid_options = supported_options[solver_name]
 
