@@ -3,6 +3,7 @@ from __future__ import annotations
 import warnings
 from functools import partial
 
+import equinox as eqx
 import jax
 import jax.numpy as jnp
 from jax import Array
@@ -26,6 +27,7 @@ from ...solver import (
     Tsit5,
 )
 from ...time_qarray import TimeQArray
+from ...utils.general import isherm
 from .._utils import (
     _astimeqarray,
     assert_solver_supported,
@@ -93,6 +95,10 @@ def mesolve(
         [Batching simulations](../../documentation/basics/batching-simulations.md)
         tutorial for more details.
 
+    Warning-: Non-hermitian density matrices
+        This function does not support non-hermitian density matrices as inputs. If
+        this is something you need, please open an issue on the GitHub repository.
+
     Args:
         H _(qarray-like or time-qarray of shape (...H, n, n))_: Hamiltonian.
         jump_ops _(list of qarray-like or time-qarray, each of shape (...Lk, n, n))_:
@@ -135,7 +141,7 @@ def mesolve(
         exp_ops = [asqarray(E) for E in exp_ops] if len(exp_ops) > 0 else None
 
     # === check arguments
-    _check_mesolve_args(H, Ls, rho0, exp_ops)
+    H, Ls, rho0, exp_ops = _check_mesolve_args(H, Ls, rho0, exp_ops)
     tsave = check_times(tsave, 'tsave')
     check_options(options, 'mesolve')
 
@@ -229,7 +235,7 @@ def _mesolve(
 
 def _check_mesolve_args(
     H: TimeQArray, Ls: list[TimeQArray], rho0: QArray, exp_ops: list[QArray] | None
-):
+) -> tuple[TimeQArray, list[TimeQArray], QArray, list[QArray] | None]:
     # === check H shape
     check_shape(H, 'H', '(..., n, n)', subs={'...': '...H'})
 
@@ -244,10 +250,15 @@ def _check_mesolve_args(
             stacklevel=2,
         )
 
-    # === check rho0 shape
+    # === check rho0 shape and hermitian
     check_shape(rho0, 'rho0', '(..., n, 1)', '(..., n, n)', subs={'...': '...rho0'})
+    rho0 = eqx.error_if(
+        rho0, jnp.logical_not(isherm(rho0)), 'Argument `rho0` is not hermitian.'
+    )
 
     # === check exp_ops shape
     if exp_ops is not None:
         for i, E in enumerate(exp_ops):
             check_shape(E, f'exp_ops[{i}]', '(n, n)')
+
+    return H, Ls, rho0, exp_ops
