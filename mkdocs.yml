@@ -152,10 +152,14 @@ nav:
       - Quantum solvers:
           - sesolve: python_api/integrators/sesolve.md
           - mesolve: python_api/integrators/mesolve.md
-          - smesolve: python_api/integrators/smesolve.md
           - sepropagator: python_api/integrators/sepropagator.md
           - mepropagator: python_api/integrators/mepropagator.md
           - floquet: python_api/integrators/floquet.md
+          - Stochastic:
+            - jssesolve: python_api/integrators/jssesolve.md
+            - dssesolve: python_api/integrators/dssesolve.md
+            - jsmesolve: python_api/integrators/jsmesolve.md
+            - dsmesolve: python_api/integrators/dsmesolve.md
       - Core:
           - Quantum arrays: python_api/qarrays/qarray/QArray.md
           - Time-dependent qarrays:
@@ -171,6 +175,7 @@ nav:
               - Kvaerno3: python_api/solver/Kvaerno3.md
               - Kvaerno5: python_api/solver/Kvaerno5.md
               - Euler: python_api/solver/Euler.md
+              - EulerMaruyama: python_api/solver/EulerMaruyama.md
               - Rouchon1: python_api/solver/Rouchon1.md
               - Rouchon2: python_api/solver/Rouchon2.md
               - Expm: python_api/solver/Expm.md
@@ -184,6 +189,11 @@ nav:
               - SEPropagatorResult: python_api/result/SEPropagatorResult.md
               - MEPropagatorResult: python_api/result/MEPropagatorResult.md
               - FloquetResult: python_api/result/FloquetResult.md
+              - Stochastic:
+                - JSSESolveResult: python_api/result/JSSESolveResult.md
+                - DSSESolveResult: python_api/result/DSSESolveResult.md
+                - JSMESolveResult: python_api/result/JSMESolveResult.md
+                - DSMESolveResult: python_api/result/DSMESolveResult.md
       - Utilities:
           - Operators:
               - eye: python_api/utils/operators/eye.md

@@ -11,6 +11,7 @@ __all__ = [
     'Dopri5',
     'Dopri8',
     'Euler',
+    'EulerMaruyama',
     'Expm',
     'Kvaerno3',
     'Kvaerno5',
@@ -135,6 +136,27 @@ class Euler(_DEFixedStep):
     """
 
     SUPPORTED_GRADIENT: ClassVar[_TupleGradient] = (Autograd, CheckpointAutograd)
+
+    # dummy init to have the signature in the documentation
+    def __init__(self, dt: float):
+        super().__init__(dt)
+
+
+class EulerMaruyama(_DEFixedStep):
+    r"""Euler-Maruyama method (fixed step size SDE solver).
+
+    For a fixed step size $\dt$, it has weak order of convergence $\dt$ and strong order
+    of convergence $\sqrt{\dt}$.
+
+    Args:
+        dt: Fixed time step.
+
+    Note-: Supported gradients
+        This solver supports differentiation with
+        [`dq.gradient.Autograd`][dynamiqs.gradient.Autograd] (default).
+    """
+
+    SUPPORTED_GRADIENT: ClassVar[_TupleGradient] = (Autograd,)
 
     # dummy init to have the signature in the documentation
     def __init__(self, dt: float):
