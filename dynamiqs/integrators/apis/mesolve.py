@@ -78,21 +78,6 @@ def mesolve(
         - $H\to H(t)$
         - $L_k\to L_k(t)$
 
-    Note-: Defining a time-dependent Hamiltonian or jump operator
-        If the Hamiltonian or the jump operators depend on time, they can be converted
-        to time-qarrays using [`dq.pwc()`][dynamiqs.pwc],
-        [`dq.modulated()`][dynamiqs.modulated], or
-        [`dq.timecallable()`][dynamiqs.timecallable]. See the
-        [Time-dependent operators](../../documentation/basics/time-dependent-operators.md)
-        tutorial for more details.
-
-    Note-: Running multiple simulations concurrently
-        The Hamiltonian `H`, the jump operators `jump_ops` and the initial density
-        matrix `rho0` can be batched to solve multiple master equations concurrently.
-        All other arguments are common to every batch. See the
-        [Batching simulations](../../documentation/basics/batching-simulations.md)
-        tutorial for more details.
-
     Args:
         H _(qarray-like or time-qarray of shape (...H, n, n))_: Hamiltonian.
         jump_ops _(list of qarray-like or time-qarray, each of shape (...Lk, n, n))_:
@@ -116,15 +101,112 @@ def mesolve(
         gradient: Algorithm used to compute the gradient. The default is
             solver-dependent, refer to the documentation of the chosen solver for more
             details.
-        options: Generic options, see [`dq.Options`][dynamiqs.Options] (supported:
-            `save_states`, `cartesian_batching`, `progress_meter`, `t0`,
-            `save_extra`).
+        options: Generic options (supported: `save_states`, `cartesian_batching`,
+            `progress_meter`, `t0`, `save_extra`).
+            ??? "Detailed options API"
+                ```python
+                dq.Options(
+                    save_states: bool = True,
+                    cartesian_batching: bool = True,
+                    progress_meter: AbstractProgressMeter | None = TqdmProgressMeter(),
+                    t0: ScalarLike | None = None,
+                    save_extra: callable[[Array], PyTree] | None = None,
+                )
+                ```
+
+                **Parameters**
+
+                - **save_states** - If `True`, the state is saved at every time in
+                    `tsave`, otherwise only the final state is returned.
+                - **cartesian_batching** - If `True`, batched arguments are treated as
+                    separated batch dimensions, otherwise the batching is performed over
+                    a single shared batched dimension.
+                - **progress_meter** - Progress meter indicating how far the solve has
+                    progressed. Defaults to a [tqdm](https://github.com/tqdm/tqdm)
+                    progress meter. Pass `None` for no output, see other options in
+                    [dynamiqs/progress_meter.py](https://github.com/dynamiqs/dynamiqs/blob/main/dynamiqs/progress_meter.py).
+                    If gradients are computed, the progress meter only displays during
+                    the forward pass.
+                - **t0** - Initial time. If `None`, defaults to the first time in
+                    `tsave`.
+                - **save_extra** _(function, optional)_ - A function with signature
+                    `f(QArray) -> PyTree` that takes a state or propagator as input and
+                    returns a PyTree. This can be used to save additional arbitrary data
+                    during the integration. The additional data is accessible in the
+                    `extra` attribute of the result object returned by the solvers.
 
     Returns:
-        [`dq.MESolveResult`][dynamiqs.MESolveResult] object holding the result of the
-            Lindblad master equation integration. Use the attributes `states` and
-            `expects` to access saved quantities, more details in
-            [`dq.MESolveResult`][dynamiqs.MESolveResult].
+        `dq.MESolveResult` object holding the result of the
+            Lindblad master equation integration. Use the attributes `result.states` and
+            `result.expects` to access saved quantities.
+
+            ??? "Detailed result API"
+
+                **Attributes**
+
+                - **states** _(qarray of shape (..., nsave, n, n))_ - Saved states with
+                    `nsave = ntsave`, or `nsave = 1` if `options.save_states` is set to
+                    `False`.
+                - **final_state** _(qarray of shape (..., n, n))_ - Saved final state.
+                - **expects** _(array of shape (..., len(exp_ops), ntsave) or None)_ - Saved
+                    expectation values, if specified by `exp_ops`.
+                - **extra** _(PyTree or None)_ - Extra data saved with `save_extra()` if
+                    specified in `options`.
+                - **infos** _(PyTree or None)_ - Solver-dependent information on the
+                    resolution.
+                - **tsave** _(array of shape (ntsave,))_ - Times for which results were
+                    saved.
+                - **solver** _(Solver)_ - Solver used.
+                - **gradient** _(Gradient)_ - Gradient used.
+                - **options** _(Options)_ - Options used.
+
+    # Advanced use-cases
+
+    ## Defining a time-dependent Hamiltonian or jump operator
+
+    If the Hamiltonian or the jump operators depend on time, they can be converted to
+    time-qarrays using [`dq.pwc()`][dynamiqs.pwc],
+    [`dq.modulated()`][dynamiqs.modulated], or
+    [`dq.timecallable()`][dynamiqs.timecallable]. See the
+    [Time-dependent operators](../../documentation/basics/time-dependent-operators.md)
+    tutorial for more details.
+
+    ## Running multiple simulations concurrently
+
+    The Hamiltonian `H`, the jump operators `jump_ops` and the initial density matrix
+    `rho0` can be batched to solve multiple master equations concurrently. All other
+    arguments are common to every batch. The resulting states and expectation values
+    are batched according to the leading dimensions of `H`, `jump_ops` and  `rho0`. The
+    behaviour depends on the value of the `cartesian_batching` option
+
+    === "If `cartesian_batching = True` (default value)"
+        The results leading dimensions are
+        ```
+        ... = ...H, ...L0, ...L1, (...), ...rho0
+        ```
+        For example if:
+
+        - `H` has shape _(2, 3, n, n)_,
+        - `jump_ops = [L0, L1]` has shape _[(4, 5, n, n), (6, n, n)]_,
+        - `rho0` has shape _(7, n, n)_,
+
+        then `result.states` has shape _(2, 3, 4, 5, 6, 7, ntsave, n, n)_.
+    === "If `cartesian_batching = False`"
+        The results leading dimensions are
+        ```
+        ... = ...H = ...L0 = ...L1 = (...) = ...rho0  # (once broadcasted)
+        ```
+        For example if:
+
+        - `H` has shape _(2, 3, n, n)_,
+        - `jump_ops = [L0, L1]` has shape _[(3, n, n), (2, 1, n, n)]_,
+        - `rho0` has shape _(3, n, n)_,
+
+        then `result.states` has shape _(2, 3, ntsave, n, n)_.
+
+    See the
+    [Batching simulations](../../documentation/basics/batching-simulations.md)
+    tutorial for more details.
     """  # noqa: E501
     # === convert arguments
     H = _astimeqarray(H)
