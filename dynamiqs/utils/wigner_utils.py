@@ -7,7 +7,7 @@ import jax.numpy as jnp
 from jax import Array, lax
 from jaxtyping import ArrayLike
 
-from .._checks import _warn_non_normalised, check_shape
+from .._checks import check_shape
 from ..qarrays.qarray import QArrayLike
 from ..qarrays.utils import to_jax
 from .general import todm
@@ -51,7 +51,6 @@ def wigner(
     """  # noqa: E501
     state = to_jax(state)
     check_shape(state, 'state', '(..., n, 1)', '(..., n, n)')
-    _warn_non_normalised(state, 'state')
 
     # === convert state to density matrix
     state = to_jax(todm(state))

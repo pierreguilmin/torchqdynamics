@@ -1,14 +1,10 @@
 from __future__ import annotations
 
-import warnings
-
 import equinox as eqx
 import jax.numpy as jnp
 from jax import Array
 
-from ._utils import _get_default_dtype
-from .qarrays.qarray import QArray, QArrayLike
-from .qarrays.utils import asqarray
+from .qarrays.qarray import QArray
 
 _is_perfect_square = lambda n: int(n**0.5) ** 2 == n
 
@@ -109,16 +105,3 @@ def check_hermitian(x: QArray, argname: str) -> QArray:
         jnp.logical_not(x.isherm(rtol=rtol, atol=atol)),
         f'Argument {argname} is not hermitian.',
     )
-
-
-def _warn_non_normalised(x: QArrayLike, argname: str):
-    # issue a warning if the input qarray-like is not normalised
-    x = asqarray(x)
-    atol = 1e-2 if _get_default_dtype() == jnp.float32 else 1e-6
-    norm = x.norm()
-    if not jnp.allclose(norm, 1.0, rtol=0.0, atol=atol):
-        warnings.warn(
-            f'Argument {argname} is not normalized (expected norm 1.0 but norm is'
-            f' {norm}).',
-            stacklevel=2,
-        )
