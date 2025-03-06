@@ -228,7 +228,7 @@ H = omega * dq.sigmaz() + epsilon * dq.sigmax()  # (100, 30, 2, 2)
 # other simulation parameters
 psi0 = dq.basis(2, 0)
 tsave = jnp.linspace(0.0, 1.0, 50)
-options = dq.Options(progress_meter=None)
+options = dq.Options(progress_meter=False)
 
 # running the simulations successively
 def run_unbatched():

@@ -243,6 +243,7 @@ def jssesolve(
     _check_jssesolve_args(H, Ls, psi0, exp_ops)
     tsave = check_times(tsave, 'tsave')
     check_options(options, 'jssesolve')
+    options = options.initialise()
 
     # we implement the jitted vectorization in another function to pre-convert QuTiP
     # objects (which are not JIT-compatible) to JAX arrays

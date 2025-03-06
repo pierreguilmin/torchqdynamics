@@ -84,7 +84,7 @@ def sesolve(
                 dq.Options(
                     save_states: bool = True,
                     cartesian_batching: bool = True,
-                    progress_meter: AbstractProgressMeter | None = TqdmProgressMeter(),
+                    progress_meter: AbstractProgressMeter | bool | None = None,
                     t0: ScalarLike | None = None,
                     save_extra: callable[[Array], PyTree] | None = None,
                 )
@@ -98,8 +98,11 @@ def sesolve(
                     separated batch dimensions, otherwise the batching is performed over
                     a single shared batched dimension.
                 - **progress_meter** - Progress meter indicating how far the solve has
-                    progressed. Defaults to a [tqdm](https://github.com/tqdm/tqdm)
-                    progress meter. Pass `None` for no output, see other options in
+                    progressed. Defaults to `None` which uses the global default
+                    progress meter (see
+                    [`dq.set_progress_meter()`][dynamiqs.set_progress_meter]). Set to
+                    `True` for a [tqdm](https://github.com/tqdm/tqdm) progress meter,
+                    and `False` for no output. See other options in
                     [dynamiqs/progress_meter.py](https://github.com/dynamiqs/dynamiqs/blob/main/dynamiqs/progress_meter.py).
                     If gradients are computed, the progress meter only displays during
                     the forward pass.
@@ -194,6 +197,7 @@ def sesolve(
     _check_sesolve_args(H, psi0, exp_ops)
     tsave = check_times(tsave, 'tsave')
     check_options(options, 'sesolve')
+    options = options.initialise()
 
     # we implement the jitted vectorization in another function to pre-convert QuTiP
     # objects (which are not JIT-compatible) to qarrays

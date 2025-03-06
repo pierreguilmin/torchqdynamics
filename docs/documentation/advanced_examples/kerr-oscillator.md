@@ -316,7 +316,7 @@ def compute_fidelity(amps):
     H = H0 + Hx + Hp
 
     # run simulation
-    options = dq.Options(progress_meter=None) # disable progress meter
+    options = dq.Options(progress_meter=False) # disable progress meter
     result = dq.mesolve(H, jump_ops, psi0, tsave, exp_ops=exp_ops, options=options)
 
     # fidelity is now defined as the overlap with |1> at the final time only

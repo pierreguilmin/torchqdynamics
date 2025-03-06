@@ -235,6 +235,7 @@ def dssesolve(
     _check_dssesolve_args(H, Ls, psi0, exp_ops)
     tsave = check_times(tsave, 'tsave')
     check_options(options, 'dssesolve')
+    options = options.initialise()
 
     if method is None:
         raise ValueError('Argument `method` must be specified.')

@@ -265,6 +265,7 @@ nav:
               - set_precision: python_api/utils/global_settings/set_precision.md
               - set_matmul_precision: python_api/utils/global_settings/set_matmul_precision.md
               - set_layout: python_api/utils/global_settings/set_layout.md
+              - set_progress_meter: python_api/utils/global_settings/set_progress_meter.md
           - Vectorization:
               - operator_to_vector: python_api/utils/vectorization/operator_to_vector.md
               - vector_to_operator: python_api/utils/vectorization/vector_to_operator.md

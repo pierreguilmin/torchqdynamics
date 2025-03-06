@@ -81,7 +81,7 @@ def sepropagator(
                 ```
                 dq.Options(
                     save_propagators: bool = True,
-                    progress_meter: AbstractProgressMeter | None = TqdmProgressMeter(),
+                    progress_meter: AbstractProgressMeter | bool | None = None,
                     t0: ScalarLike | None = None,
                     save_extra: callable[[Array], PyTree] | None = None,
                 )
@@ -92,8 +92,11 @@ def sepropagator(
                 - **save_propagators** - If `True`, the propagator is saved at every
                     time in `tsave`, otherwise only the final propagator is returned.
                 - **progress_meter** - Progress meter indicating how far the solve has
-                    progressed. Defaults to a [tqdm](https://github.com/tqdm/tqdm)
-                    progress meter. Pass `None` for no output, see other options in
+                    progressed. Defaults to `None` which uses the global default
+                    progress meter (see
+                    [`dq.set_progress_meter()`][dynamiqs.set_progress_meter]). Set to
+                    `True` for a [tqdm](https://github.com/tqdm/tqdm) progress meter,
+                    and `False` for no output. See other options in
                     [dynamiqs/progress_meter.py](https://github.com/dynamiqs/dynamiqs/blob/main/dynamiqs/progress_meter.py).
                     If gradients are computed, the progress meter only displays during
                     the forward pass.
@@ -161,6 +164,7 @@ def sepropagator(
     _check_sepropagator_args(H)
     tsave = check_times(tsave, 'tsave')
     check_options(options, 'sepropagator')
+    options = options.initialise()
 
     # we implement the jitted vectorization in another function to pre-convert QuTiP
     # objects (which are not JIT-compatible) to qarrays

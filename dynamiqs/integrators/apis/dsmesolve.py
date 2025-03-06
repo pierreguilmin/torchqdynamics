@@ -243,6 +243,7 @@ def dsmesolve(
     _check_dsmesolve_args(H, Ls, etas, rho0, exp_ops)
     tsave = check_times(tsave, 'tsave')
     check_options(options, 'dsmesolve')
+    options = options.initialise()
 
     if method is None:
         raise ValueError('Argument `method` must be specified.')

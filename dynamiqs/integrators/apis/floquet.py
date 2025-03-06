@@ -72,7 +72,7 @@ def floquet(
             ??? "Detailed options API"
                 ```
                 dq.Options(
-                    progress_meter: AbstractProgressMeter | None = TqdmProgressMeter(),
+                    progress_meter: AbstractProgressMeter | bool | None = None,
                     t0: ScalarLike | None = None,
                 )
                 ```
@@ -80,8 +80,11 @@ def floquet(
                 **Parameters**
 
                 - **progress_meter** - Progress meter indicating how far the solve has
-                    progressed. Defaults to a [tqdm](https://github.com/tqdm/tqdm)
-                    progress meter. Pass `None` for no output, see other options in
+                    progressed. Defaults to `None` which uses the global default
+                    progress meter (see
+                    [`dq.set_progress_meter()`][dynamiqs.set_progress_meter]). Set to
+                    `True` for a [tqdm](https://github.com/tqdm/tqdm) progress meter,
+                    and `False` for no output. See other options in
                     [dynamiqs/progress_meter.py](https://github.com/dynamiqs/dynamiqs/blob/main/dynamiqs/progress_meter.py).
                     If gradients are computed, the progress meter only displays during
                     the forward pass.
@@ -159,6 +162,7 @@ def floquet(
     tsave = check_times(tsave, 'tsave')
     H, T, tsave = _check_floquet_args(H, T, tsave)
     check_options(options, 'floquet')
+    options = options.initialise()
 
     # We implement the jitted vectorization in another function to pre-convert QuTiP
     # objects (which are not JIT-compatible) to qarrays

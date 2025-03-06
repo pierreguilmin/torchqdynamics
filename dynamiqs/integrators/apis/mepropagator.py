@@ -169,6 +169,7 @@ def mepropagator(
     _check_mepropagator_args(H, Ls)
     tsave = check_times(tsave, 'tsave')
     check_options(options, 'mepropagator')
+    options = options.initialise()
 
     # we implement the jitted vectorization in another function to pre-convert QuTiP
     # objects (which are not JIT-compatible) to qarrays
