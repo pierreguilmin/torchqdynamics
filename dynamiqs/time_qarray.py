@@ -7,7 +7,7 @@ import equinox as eqx
 import jax
 import jax.numpy as jnp
 import jax.tree_util as jtu
-from jax import Array, lax
+from jax import Array
 from jaxtyping import ArrayLike, PyTree, Scalar, ScalarLike
 
 from ._checks import check_shape, check_times
@@ -248,6 +248,10 @@ class TimeQArray(eqx.Module):
         vectorized _(bool)_: Whether the underlying qarray is non-vectorized (ket, bra
             or operator) or vectorized (operator in vector form or superoperator in
             matrix form).
+        tstart _(float | None)_: The returned qarray is null for all times
+            $t < t_{start}$ (ignored if `tstart=None`).
+        tend _(float | None)_: The returned qarray is null for all times
+            $t \geq t_{end}$ (ignored if `tend=None`).
         discontinuity_ts _(Array | None)_: Times at which there is a discontinuous jump
             in the time-qarray values (the array is always sorted, but does not
             necessarily contain unique values).
@@ -260,10 +264,23 @@ class TimeQArray(eqx.Module):
     # Subclasses should implement:
     # - the properties: dtype, shape, dims, ndiags, vectorized, layout, mT, in_axes,
     #                   discontinuity_ts
-    # - the methods: reshape, broadcast_to, conj, __call__, __mul__
+    # - the methods: reshape, broadcast_to, conj, _call, __mul__
 
-    def _replace(self, **kwargs) -> TimeQArray:
-        return type(self)(**kwargs)
+    tstart: float | None
+    tend: float | None
+
+    def __init__(self, *, tstart: float | None = None, tend: float | None = None):
+        self.tstart = tstart
+        self.tend = tend
+
+    def _replace(
+        self, tstart: float | None = None, tend: float | None = None, **kwargs
+    ) -> TimeQArray:
+        if tstart is None:
+            tstart = self.tstart
+        if tend is None:
+            tend = self.tend
+        return type(self)(tstart=tstart, tend=tend, **kwargs)
 
     @property
     @abstractmethod
@@ -312,10 +329,31 @@ class TimeQArray(eqx.Module):
         pass
 
     @property
-    @abstractmethod
     def discontinuity_ts(self) -> Array | None:
         # must be sorted, not necessarily unique values
-        pass
+        if self.tstart is not None and self.tend is not None:
+            return jnp.array([self.tstart, self.tend])
+        if self.tstart is not None:
+            return jnp.array([self.tstart])
+        if self.tend is not None:
+            return jnp.array([self.tend])
+        return None
+
+    def clip(
+        self, tstart: float | None = None, tend: float | None = None
+    ) -> TimeQArray:
+        r"""Set the start and/or end time beyond which the returned qarray is null.
+
+        Args:
+            tstart: The returned qarray is null for all times $t < t_{start}$ (ignored
+                if `tstart=None`).
+            tend: The returned qarray is null for all times $t \geq t_{end}$ (ignored
+                if `tend=None`).
+
+        Returns:
+            New time-qarray with the given time bounds.
+        """
+        return self._replace(tstart=tstart, tend=tend)
 
     @abstractmethod
     def reshape(self, *shape: int) -> TimeQArray:
@@ -378,7 +416,17 @@ class TimeQArray(eqx.Module):
             )
         return self.reshape(*self.shape[:axis], *self.shape[axis + 1 :])
 
-    @abstractmethod
+    def _indicator(self, t: ScalarLike) -> float:
+        if self.tstart is not None and self.tend is not None:
+            return jax.lax.cond(
+                jnp.logical_or(t < self.tstart, t >= self.tend), lambda: 0, lambda: 1
+            )
+        elif self.tstart is not None:
+            return jax.lax.cond(t < self.tstart, lambda: 0, lambda: 1)
+        elif self.tend is not None:
+            return jax.lax.cond(t >= self.tend, lambda: 0, lambda: 1)
+        return 1
+
     def __call__(self, t: ScalarLike) -> QArray:
         """Returns the time-qarray evaluated at a given time.
 
@@ -388,6 +436,12 @@ class TimeQArray(eqx.Module):
         Returns:
             Qarray evaluated at time $t$.
         """
+        return self._indicator(t) * self._call(t)
+
+    @abstractmethod
+    def _call(self, t: ScalarLike) -> QArray:
+        # self.tstart <= t < self.tend
+        pass
 
     def __neg__(self) -> TimeQArray:
         return self * (-1)
@@ -432,6 +486,12 @@ class TimeQArray(eqx.Module):
 class ConstantTimeQArray(TimeQArray):
     qarray: QArray
 
+    def __init__(
+        self, qarray: QArray, *, tstart: float | None = None, tend: float | None = None
+    ):
+        super().__init__(tstart=tstart, tend=tend)
+        self.qarray = qarray
+
     def _replace(self, qarray: QArray | None = None, **kwargs) -> TimeQArray:
         if qarray is None:
             qarray = self.qarray
@@ -470,10 +530,6 @@ class ConstantTimeQArray(TimeQArray):
     def in_axes(self) -> PyTree[int | None]:
         return ConstantTimeQArray(0)
 
-    @property
-    def discontinuity_ts(self) -> Array | None:
-        return None
-
     def reshape(self, *shape: int) -> TimeQArray:
         qarray = self.qarray.reshape(*shape)
         return self._replace(qarray=qarray)
@@ -486,27 +542,33 @@ class ConstantTimeQArray(TimeQArray):
         qarray = self.qarray.conj()
         return self._replace(qarray=qarray)
 
-    def __call__(self, t: ScalarLike) -> QArray:  # noqa: ARG002
+    def _call(self, t: ScalarLike) -> QArray:  # noqa: ARG002
         return self.qarray
 
     def __mul__(self, y: QArrayLike) -> TimeQArray:
         qarray = self.qarray * y
         return self._replace(qarray=qarray)
 
-    def __add__(self, y: QArrayLike | TimeQArray) -> TimeQArray:
-        # handle addition with a constant object as a special case
-        if isqarraylike(y):
-            y = ConstantTimeQArray(asqarray(y))
-        if isinstance(y, ConstantTimeQArray):
-            return ConstantTimeQArray(self.qarray + y.qarray)
-
-        return super().__add__(y)
-
 
 class PWCTimeQArray(TimeQArray):
     times: Array  # (nv+1,)
     values: Array  # (..., nv)
     qarray: QArray  # (n, n)
+
+    def __init__(
+        self,
+        times: Array,
+        values: Array,
+        qarray: QArray,
+        *,
+        tstart: float | None = None,
+        tend: float | None = None,
+    ):
+        # note: tstart and tend can be different from times[0] and times[-1]
+        super().__init__(tstart=tstart, tend=tend)
+        self.times = times
+        self.values = values
+        self.qarray = qarray
 
     def _replace(
         self, values: Array | None = None, qarray: QArray | None = None, **kwargs
@@ -554,7 +616,7 @@ class PWCTimeQArray(TimeQArray):
 
     @property
     def discontinuity_ts(self) -> Array | None:
-        return self.times
+        return concatenate_sort(super().discontinuity_ts, self.times)
 
     def reshape(self, *shape: int) -> TimeQArray:
         shape = shape[:-2] + self.values.shape[-1:]  # (..., nv)
@@ -579,11 +641,11 @@ class PWCTimeQArray(TimeQArray):
             idx = jnp.searchsorted(self.times, t, side='right') - 1
             return self.values[..., idx]  # (...)
 
-        return lax.cond(
+        return jax.lax.cond(
             jnp.logical_or(t < self.times[0], t >= self.times[-1]), _zero, _pwc, t
         )
 
-    def __call__(self, t: ScalarLike) -> QArray:
+    def _call(self, t: ScalarLike) -> QArray:
         return self.prefactor(t)[..., None, None] * self.qarray
 
     def __mul__(self, y: QArrayLike) -> TimeQArray:
@@ -595,6 +657,20 @@ class ModulatedTimeQArray(TimeQArray):
     f: BatchedCallable  # (...)
     qarray: QArray  # (n, n)
     _disc_ts: Array | None
+
+    def __init__(
+        self,
+        f: BatchedCallable,
+        qarray: QArray,
+        _disc_ts: Array | None,
+        *,
+        tstart: float | None = None,
+        tend: float | None = None,
+    ):
+        super().__init__(tstart=tstart, tend=tend)
+        self.f = f
+        self.qarray = qarray
+        self._disc_ts = _disc_ts
 
     def _replace(
         self, f: BatchedCallable | None = None, qarray: QArray | None = None, **kwargs
@@ -640,7 +716,7 @@ class ModulatedTimeQArray(TimeQArray):
 
     @property
     def discontinuity_ts(self) -> Array | None:
-        return self._disc_ts
+        return concatenate_sort(super().discontinuity_ts, self._disc_ts)
 
     def reshape(self, *shape: int) -> TimeQArray:
         f = self.f.reshape(*shape[:-2])
@@ -655,11 +731,8 @@ class ModulatedTimeQArray(TimeQArray):
         qarray = self.qarray.conj()
         return self._replace(f=f, qarray=qarray)
 
-    def prefactor(self, t: ScalarLike) -> Array:
-        return self.f(t)
-
-    def __call__(self, t: ScalarLike) -> QArray:
-        return self.prefactor(t)[..., None, None] * self.qarray
+    def _call(self, t: ScalarLike) -> QArray:
+        return self.f(t)[..., None, None] * self.qarray
 
     def __mul__(self, y: QArrayLike) -> TimeQArray:
         qarray = self.qarray * y
@@ -669,6 +742,18 @@ class ModulatedTimeQArray(TimeQArray):
 class CallableTimeQArray(TimeQArray):
     f: BatchedCallable  # (..., n, n)
     _disc_ts: Array | None
+
+    def __init__(
+        self,
+        f: BatchedCallable,
+        _disc_ts: Array | None,
+        *,
+        tstart: float | None = None,
+        tend: float | None = None,
+    ):
+        super().__init__(tstart=tstart, tend=tend)
+        self.f = f
+        self._disc_ts = _disc_ts
 
     def _replace(self, f: BatchedCallable | None = None, **kwargs) -> TimeQArray:
         if f is None:
@@ -710,7 +795,7 @@ class CallableTimeQArray(TimeQArray):
 
     @property
     def discontinuity_ts(self) -> Array | None:
-        return self._disc_ts
+        return concatenate_sort(super().discontinuity_ts, self._disc_ts)
 
     def reshape(self, *shape: int) -> TimeQArray:
         f = self.f.reshape(*shape)
@@ -724,7 +809,7 @@ class CallableTimeQArray(TimeQArray):
         f = self.f.conj()
         return self._replace(f=f)
 
-    def __call__(self, t: ScalarLike) -> QArray:
+    def _call(self, t: ScalarLike) -> QArray:
         return self.f(t)
 
     def __mul__(self, y: QArrayLike) -> TimeQArray:
@@ -735,7 +820,16 @@ class CallableTimeQArray(TimeQArray):
 class SummedTimeQArray(TimeQArray):
     timeqarrays: list[TimeQArray]
 
-    def __init__(self, timeqarrays: list[TimeQArray], check: bool = True):
+    def __init__(
+        self,
+        timeqarrays: list[TimeQArray],
+        check: bool = True,
+        *,
+        tstart: float | None = None,
+        tend: float | None = None,
+    ):
+        # note: tstart and tend are not used by this class
+        super().__init__(tstart=None, tend=None)
         if check:
             # verify all time-qarrays of the sum are broadcast compatible
             shape = jnp.broadcast_shapes(*[tqarray.shape for tqarray in timeqarrays])
@@ -816,6 +910,10 @@ class SummedTimeQArray(TimeQArray):
         return ft.reduce(
             lambda x, y: x + y, [tqarray(t) for tqarray in self.timeqarrays]
         )
+
+    def _call(self, t: ScalarLike) -> QArray:
+        # this will never be called because we directly override __call__
+        raise NotImplementedError
 
     def __mul__(self, y: QArrayLike) -> TimeQArray:
         timeqarrays = [tqarray * y for tqarray in self.timeqarrays]
